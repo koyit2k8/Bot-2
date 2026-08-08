@@ -5,18 +5,36 @@ import urllib.parse
 import random
 from datetime import datetime, timedelta
 import os
+from flask import Flask
+from threading import Thread
+
+# --- CẤU HÌNH WEB SERVER CHO RENDER & UPTIMEROBOT ---
+app = Flask('')
+
+@app.route('/')
+def home():
+    return "Bot is running 24/7!"
+
+def run_web():
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host='0.0.0.0', port=port)
+
+def keep_alive():
+    t = Thread(target=run_web)
+    t.start()
+
 # --- CẤU HÌNH BOT ---
 TOKEN = os.getenv("DISCORD_TOKEN")
 
 WELCOME_CHANNEL_ID = 1379468628549963899  
 GOODBYE_CHANNEL_ID = 1449415666233774102  
 TICKET_CATEGORY_ID = 1483484606735974491  
-MANAGER_CHANNEL_ID = 1535624430699417681  # <--- THAY ID KÊNH MANAGER (QUẢN LÝ) CỦA ADMIN VÀO ĐÂY
+MANAGER_CHANNEL_ID = 1535624430699417681
 
-# --- CẤU HÌNH THÔNG TIN THANH TOÁN (THAY THÔNG TIN CỦA BẠN VÀO ĐÂY) ---
-BANK_ID = "MB"          # Mã ngân hàng (Ví dụ: MB, VCB, TCB, ACB, BIDV,...)
-BANK_ACCOUNT = "999999999498"  # Số tài khoản ngân hàng của bạn
-ACCOUNT_NAME = "NGUYEN THANH TUAN" # Tên chủ tài khoản (Viết không dấu)
+# --- CẤU HÌNH THÔNG TIN THANH TOÁN ---
+BANK_ID = "MB"          
+BANK_ACCOUNT = "999999999498"  
+ACCOUNT_NAME = "NGUYEN THANH TUAN" 
 
 # --- CẤU HÌNH DANH MỤC MUA ACCOUNT ---
 BUY_CATEGORIES_DATA = {
@@ -38,7 +56,7 @@ BUY_CATEGORIES_DATA = {
         "emoji": "🛒",
         "style": discord.ButtonStyle.primary,
         "prices": [
-            
+            ("Tài Khoản Canva Pro (1 Năm)", 150000, "Giá: 150.000 VNĐ")
         ]
     },
     "acc-youtube-premium": {
@@ -46,7 +64,7 @@ BUY_CATEGORIES_DATA = {
         "emoji": "🛒",
         "style": discord.ButtonStyle.primary,
         "prices": [
-
+            ("Youtube Premium (1 Tháng)", 30000, "Giá: 30.000 VNĐ")
         ]
     },
     "acc-tiktok-clone": {
@@ -54,7 +72,7 @@ BUY_CATEGORIES_DATA = {
             "emoji": "🛒",
             "style": discord.ButtonStyle.primary,
             "prices": [
-    
+                ("TikTok Clone (1 Con)", 5000, "Giá: 5.000 VNĐ")
             ]
     },
     "acc-gmail-clone": {
@@ -62,35 +80,35 @@ BUY_CATEGORIES_DATA = {
             "emoji": "🛒",
             "style": discord.ButtonStyle.primary,
             "prices": [
-                
+                ("Gmail Reg Trên 1 Tháng (1 Con)", 4000, "Giá: 4.000 VNĐ")
             ]
     }
 }
 
 # --- CẤU HÌNH DANH MỤC RANDOM ACCOUNT ---
 RANDOM_CATEGORIES_DATA = {
-    "random-facebook-co": {
+    "random-facebook-co-1": {
         "name": "Random Tài Khoản Facebook Cổ (2012-2022)",
         "emoji": "🎲",
         "style": discord.ButtonStyle.primary,
         "prices": [
-
+            ("Random FB Cổ 2012-2022", 20000, "Giá: 20.000 VNĐ")
         ]
     },
-    "random-facebook-co": {
+    "random-facebook-co-2": {
         "name": "Random Tài Khoản Facebook Cổ (2008-2016)",
         "emoji": "🎲",
         "style": discord.ButtonStyle.primary,
         "prices": [
-
+            ("Random FB Cổ 2008-2016", 50000, "Giá: 50.000 VNĐ")
         ]
     },
-    "random-facebook": {
+    "random-tiktok-us": {
         "name": "Random Tài Khoản TikTok US",
         "emoji": "🎲",
         "style": discord.ButtonStyle.primary,
         "prices": [
-
+            ("Random TikTok US", 15000, "Giá: 15.000 VNĐ")
         ]
     }
 }
@@ -135,7 +153,6 @@ async def on_member_join(member):
     channel = member.guild.get_channel(channel_id)
     
     if channel:
-        # Lấy thời gian thực tại thời điểm thành viên tham gia
         current_time_str = datetime.now().strftime("%d/%m/%Y lúc %H:%M:%S")
         
         embed = discord.Embed(
@@ -151,8 +168,6 @@ async def on_member_join(member):
         embed.set_author(name=member.guild.name, icon_url=member.guild.icon.url if member.guild.icon else member.display_avatar.url)
         embed.set_thumbnail(url=member.display_avatar.url)
         embed.set_image(url="https://i.pinimg.com/originals/da/79/68/da7968c54b12ba7ebf7dfd70dd1faaf2.gif")
-        
-        # Đưa thời gian thực vào footer của Embed
         embed.set_footer(text=f"{member.guild.name} • {current_time_str}")
         
         await channel.send(content=f"Welcome {member.mention} to **{member.guild.name}**", embed=embed)
@@ -199,7 +214,7 @@ class WarrantySelect(discord.ui.Select):
         if months == 0:
             expiry_str = "Không bảo hành"
         else:
-            expiry_date = now + timedelta(days=months * 30) # Tính thời gian bảo hành thực tế cộng dồn tháng
+            expiry_date = now + timedelta(days=months * 30)
             expiry_str = expiry_date.strftime("%d/%m/%Y lúc %H:%M:%S")
 
         modal = AccountInputModal(
@@ -246,7 +261,6 @@ class AccountInputModal(discord.ui.Modal, title="Gửi thông tin tài khoản c
             return
 
         current_time_str = datetime.now().strftime("%d/%m/%Y lúc %H:%M:%S")
-
         warranty_display = f"{self.warranty_months} tháng (Đến {self.expiry_str})" if self.warranty_months > 0 else "Không bảo hành"
 
         acc_text = (
@@ -274,10 +288,8 @@ class AccountInputModal(discord.ui.Modal, title="Gửi thông tin tài khoản c
             color=discord.Color.green()
         )
         
-        # 1. Gửi thông tin tài khoản vào kênh ticket của khách
         await ticket_channel.send(content=f"{self.customer.mention}", embed=embed)
 
-        # 2. Gửi bản sao thông tin tài khoản vào hộp thư riêng (DM) của khách hàng
         try:
             dm_embed = discord.Embed(
                 title="📦 THÔNG TIN TÀI KHOẢN ĐÃ GIAO",
@@ -286,7 +298,7 @@ class AccountInputModal(discord.ui.Modal, title="Gửi thông tin tài khoản c
             )
             await self.customer.send(embed=dm_embed)
         except Exception:
-            pass  # Tránh lỗi nếu khách hàng chặn tin nhắn riêng (DM)
+            pass  
 
         await interaction.response.send_message("✅ Đã gửi thông tin tài khoản vào ticket và hộp thư riêng (DM) của khách hàng thành công!", ephemeral=True)
 
@@ -343,8 +355,6 @@ class AdminActionView(discord.ui.View):
         await interaction.response.send_message(f"✅ Đã xác nhận nhận tiền đơn hàng `{self.order_code}`! Bây giờ bạn có thể chọn Gửi tài khoản hoặc Hoàn tiền.", ephemeral=True)
 
         current_time_str = datetime.now().strftime("%d/%m/%Y lúc %H:%M:%S")
-
-        # 1. Thông báo nạp tiền thành công lên kênh ticket kèm ngày giờ thực
         guild = interaction.guild
         ticket_channel = guild.get_channel(self.ticket_channel_id)
         
@@ -367,7 +377,6 @@ class AdminActionView(discord.ui.View):
         if ticket_channel:
             await ticket_channel.send(content=f"{self.customer.mention}", embed=success_embed)
 
-        # 2. Gửi thông báo nạp tiền thành công về hộp thư riêng (DM) của khách hàng kèm ngày giờ thực
         try:
             dm_embed = discord.Embed(
                 title="💰 THÔNG BÁO NẠP TIỀN / THANH TOÁN THÀNH CÔNG",
@@ -453,7 +462,6 @@ class QuantityModal(discord.ui.Modal, title="Nhập số lượng muốn mua"):
         encoded_add_info = urllib.parse.quote(add_info)
         
         qr_url = f"https://img.vietqr.io/image/{BANK_ID}-{BANK_ACCOUNT}-compact2.png?amount={total_price}&addInfo={encoded_add_info}&accountName={encoded_account_name}"
-
         current_time_str = datetime.now().strftime("%d/%m/%Y lúc %H:%M:%S")
 
         embed = discord.Embed(
@@ -479,8 +487,8 @@ class QuantityModal(discord.ui.Modal, title="Nhập số lượng muốn mua"):
 
         guide_text = (
             "📌 **HƯỚNG DẪN THANH TOÁN:**\n"
-            "• **Đối với thông tin thanh toán:** Khách hàng có thể sao chép Số tài khoản, Ngân hàng và Nội dung chuyển khoản *(Check đúng tên Chủ tài khoản và Nội dung chuyển khoản theo đúng thông tin thanh toán rồi mới xác nhận chuyển)*.\n"
-            "• **Đối với quét mã QR:** Khách hàng có thể sử dụng chức năng Scan QR của ngân hàng để chuyển *(Trong mã QR tự động trên thông tin thanh toán đã bao gồm đúng tất cả thông tin, sau khi quét bạn có thể kiểm tra lại và ấn xác nhận chuyển)*."
+            "• **Đối với thông tin thanh toán:** Khách hàng có thể sao chép Số tài khoản, Ngân hàng và Nội dung chuyển khoản.\n"
+            "• **Đối với quét mã QR:** Khách hàng có thể sử dụng chức năng Scan QR của ngân hàng để chuyển."
         )
         await interaction.channel.send(guide_text)
 
@@ -511,8 +519,6 @@ class PriceSelect(discord.ui.Select):
         
         data_source = BUY_CATEGORIES_DATA if ticket_type == "mua-acc" else RANDOM_CATEGORIES_DATA
         prices = data_source[category_key]["prices"]
-        
-        # Tự động thay đổi emoji tùy theo loại ticket: Mua Account dùng 💎, Random Account dùng 🎲
         dropdown_emoji = "💎" if ticket_type == "mua-acc" else "🎲"
         
         options = [
@@ -689,7 +695,7 @@ async def ticket_done(ctx):
             pass
         return
 
-    await ctx.send("🔒 Giao dịch hoàn tất! Kênh này sẽ tự động đóng sau 3 giây...")
+    @ctx.send("🔒 Giao dịch hoàn tất! Kênh này sẽ tự động đóng sau 3 giây...")
     try:
         await ctx.message.delete()
     except:
@@ -700,4 +706,7 @@ async def ticket_done(ctx):
     except:
         pass
 
-bot.run(TOKEN)
+# KHỞI CHẠY WEB SERVER VÀ BOT
+if __name__ == "__main__":
+    keep_alive()
+    bot.run(TOKEN)
