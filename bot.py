@@ -306,23 +306,24 @@ class AccountInputModal(discord.ui.Modal, title="Gửi thông tin tài khoản c
         history_channel = guild.get_channel(HISTORY_CHANNEL_ID)
         if history_channel:
             user_id_str = str(self.customer.id)
-            # Cấu hình ẩn ID: Giữ lại 2 ký tự đầu, 2 ký tự cuối, ở giữa thay bằng *** giống ví dụ 1********8[cite: 12]
+            # Cấu hình ẩn ID: Giữ lại 2 ký tự đầu, 2 ký tự cuối, ở giữa thay bằng *** giống ví dụ 1********8[cite: 12, 13]
             if len(user_id_str) > 4:
-                masked_user_id = user_id_str[:2] + "***" + user_id_str[-2:]
+                masked_user_id = user_id_str[:1] + "******" + user_id_str[-1:]
             else:
-                masked_user_id = user_id_str[0] + "***" + user_id_str[-1]
+                masked_user_id = user_id_str[0] + "******" + user_id_str[-1]
             
             # Phân định rõ ràng loại giao dịch
             display_type = "Mua Account" if self.ticket_type == "mua-acc" else "Random Account"
             
-            history_msg = f"👤 Khách hàng {masked_user_id} vừa thanh toán và giao dịch thành công ☑️\nLoại: {display_type}\nGiá: {self.total_price:,} VNĐ\nBảo hành: {self.warranty_text}\nVào lúc: {current_time_str}".replace(",", ".")
+            # Đã thêm Số lượng vào đây 👇
+            history_msg = f"👤 Khách hàng {masked_user_id} vừa thanh toán và giao dịch thành công ☑️\nLoại: {display_type}\nSố lượng: {self.quantity}\nGiá: {self.total_price:,} VNĐ\nBảo hành: {self.warranty_text}\nVào lúc: {current_time_str}".replace(",", ".")[cite: 13]
             
             history_embed = discord.Embed(
                 description=history_msg,
                 color=discord.Color.blue()
             )
-            history_embed.set_image(url="https://i.ibb.co/Y4TM5QRM/C40-F0704-7988-4206-98-BF-5326-B8-DCF0-EF.gif")
-            await history_channel.send(embed=history_embed)
+            history_embed.set_image(url="https://i.ibb.co/Y4TM5QRM/C40-F0704-7988-4206-98-BF-5326-B8-DCF0-EF.gif")[cite: 13]
+            await history_channel.send(embed=history_embed)[cite: 13]
 
         await interaction.response.send_message("✅ Đã gửi thông tin tài khoản vào ticket và hộp thư riêng (DM) của khách hàng thành công!", ephemeral=True)
 
