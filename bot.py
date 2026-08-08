@@ -525,7 +525,7 @@ class PriceSelect(discord.ui.Select):
             discord.SelectOption(label=label, value=str(price), description=desc, emoji=dropdown_emoji)
             for label, price, desc in prices
         ]
-        super().__init__(placeholder="👉 Chọn mức giá sản phẩm bạn muốn...", min_values=1, max_values=1, options=options)
+        super().__init__(placeholder="👉 Chọn mức giá sản phẩm muốn...", min_values=1, max_values=1, options=options)
 
     async def callback(self, interaction: discord.Interaction):
         unit_price = int(self.values[0])
