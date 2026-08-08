@@ -3,10 +3,13 @@ from discord.ext import commands
 import asyncio
 import urllib.parse
 import random
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import os
 from flask import Flask
 from threading import Thread
+
+# --- CẤU HÌNH MÚI GIỜ VIỆT NAM (UTC+7) ---
+VN_TZ = timezone(timedelta(hours=7))
 
 # --- CẤU HÌNH WEB SERVER CHO RENDER & UPTIMEROBOT ---
 app = Flask('')
@@ -153,7 +156,7 @@ async def on_member_join(member):
     channel = member.guild.get_channel(channel_id)
     
     if channel:
-        current_time_str = datetime.now().strftime("%d/%m/%Y lúc %H:%M:%S")
+        current_time_str = datetime.now(VN_TZ).strftime("%d/%m/%Y lúc %H:%M:%S")
         
         embed = discord.Embed(
             title=f"👋 CHÀO MỪNG BẠN ĐÃ ĐẾN VỚI {member.guild.name}",
@@ -210,7 +213,7 @@ class WarrantySelect(discord.ui.Select):
 
     async def callback(self, interaction: discord.Interaction):
         months = int(self.values[0])
-        now = datetime.now()
+        now = datetime.now(VN_TZ)
         if months == 0:
             expiry_str = "Không bảo hành"
         else:
@@ -260,7 +263,7 @@ class AccountInputModal(discord.ui.Modal, title="Gửi thông tin tài khoản c
             await interaction.response.send_message("❌ Không tìm thấy kênh ticket của khách hàng này!", ephemeral=True)
             return
 
-        current_time_str = datetime.now().strftime("%d/%m/%Y lúc %H:%M:%S")
+        current_time_str = datetime.now(VN_TZ).strftime("%d/%m/%Y lúc %H:%M:%S")
         warranty_display = f"{self.warranty_months} tháng (Đến {self.expiry_str})" if self.warranty_months > 0 else "Không bảo hành"
 
         acc_text = (
@@ -323,7 +326,7 @@ class ConfirmRefundView(discord.ui.View):
 
         await interaction.response.send_message(f"✅ Đã gửi yêu cầu hoàn tiền cho đơn hàng `{self.order_code}` vào ticket của khách!", ephemeral=True)
 
-        current_time_str = datetime.now().strftime("%d/%m/%Y lúc %H:%M:%S")
+        current_time_str = datetime.now(VN_TZ).strftime("%d/%m/%Y lúc %H:%M:%S")
         refund_text = (
             f"Đơn hàng của quý khách `{self.order_code}` đang chờ hoàn tiền (Thời gian yêu cầu: {current_time_str})\n"
             f"Quý khách vui lòng gửi **Thông tin ngân hàng** hoặc **Ví điện tử** chính xác của mình để được hoàn tiền nhanh nhất (Có thể gửi mã QR)"
@@ -354,7 +357,7 @@ class AdminActionView(discord.ui.View):
         await interaction.message.edit(view=next_view)
         await interaction.response.send_message(f"✅ Đã xác nhận nhận tiền đơn hàng `{self.order_code}`! Bây giờ bạn có thể chọn Gửi tài khoản hoặc Hoàn tiền.", ephemeral=True)
 
-        current_time_str = datetime.now().strftime("%d/%m/%Y lúc %H:%M:%S")
+        current_time_str = datetime.now(VN_TZ).strftime("%d/%m/%Y lúc %H:%M:%S")
         guild = interaction.guild
         ticket_channel = guild.get_channel(self.ticket_channel_id)
         
@@ -462,7 +465,7 @@ class QuantityModal(discord.ui.Modal, title="Nhập số lượng muốn mua"):
         encoded_add_info = urllib.parse.quote(add_info)
         
         qr_url = f"https://img.vietqr.io/image/{BANK_ID}-{BANK_ACCOUNT}-compact2.png?amount={total_price}&addInfo={encoded_add_info}&accountName={encoded_account_name}"
-        current_time_str = datetime.now().strftime("%d/%m/%Y lúc %H:%M:%S")
+        current_time_str = datetime.now(VN_TZ).strftime("%d/%m/%Y lúc %H:%M:%S")
 
         embed = discord.Embed(
             title="💳 THÔNG TIN THANH TOÁN ĐƠN HÀNG",
@@ -684,7 +687,7 @@ async def setup_ticket(ctx):
     except:
         pass
 
-@bot.command(name="ticket_done")
+@bot.command(name="done")
 @commands.has_permissions(administrator=True)
 async def ticket_done(ctx):
     if not (ctx.channel.name.startswith("mua-acc-") or ctx.channel.name.startswith("random-acc-")):
