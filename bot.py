@@ -214,12 +214,10 @@ class WarrantySelect(discord.ui.Select):
 
     async def callback(self, interaction: discord.Interaction):
         months = int(self.values[0])
-        now = datetime.now(VN_TZ)
         if months == 0:
-            expiry_str = "Không bảo hành"
+            warranty_text = "Không bảo hành"
         else:
-            expiry_date = now + timedelta(days=months * 30)
-            expiry_str = expiry_date.strftime("%d/%m/%Y lúc %H:%M:%S")
+            warranty_text = f"{months} tháng"
 
         modal = AccountInputModal(
             self.ticket_channel_id, 
@@ -227,8 +225,7 @@ class WarrantySelect(discord.ui.Select):
             self.product_name, 
             self.quantity, 
             self.total_price,
-            months,
-            expiry_str,
+            warranty_text,
             self.order_code
         )
         await interaction.response.send_modal(modal)
@@ -245,15 +242,14 @@ class AccountInputModal(discord.ui.Modal, title="Gửi thông tin tài khoản c
     token_input = discord.ui.TextInput(label="Token (nếu có)", placeholder="Nhập token...", required=False)
     cookie_input = discord.ui.TextInput(label="Cookie (nếu có)", placeholder="Nhập cookie...", required=False, style=discord.TextStyle.paragraph)
 
-    def __init__(self, ticket_channel_id: int, customer: discord.User, product_name: str, quantity: int, total_price: int, warranty_months: int, expiry_str: str, order_code: str):
+    def __init__(self, ticket_channel_id: int, customer: discord.User, product_name: str, quantity: int, total_price: int, warranty_text: str, order_code: str):
         super().__init__()
         self.ticket_channel_id = ticket_channel_id
         self.customer = customer
         self.product_name = product_name
         self.quantity = quantity
         self.total_price = total_price
-        self.warranty_months = warranty_months
-        self.expiry_str = expiry_str
+        self.warranty_text = warranty_text
         self.order_code = order_code
 
     async def on_submit(self, interaction: discord.Interaction):
@@ -265,7 +261,6 @@ class AccountInputModal(discord.ui.Modal, title="Gửi thông tin tài khoản c
             return
 
         current_time_str = datetime.now(VN_TZ).strftime("%d/%m/%Y lúc %H:%M:%S")
-        warranty_display = f"{self.warranty_months} tháng (Đến {self.expiry_str})" if self.warranty_months > 0 else "Không bảo hành"
 
         acc_text = (
             f"Cảm ơn bạn đã thanh toán, quý khách vui lòng tiến hành đăng nhập theo thông tin tài khoản được cung cấp bên dưới "
@@ -274,7 +269,7 @@ class AccountInputModal(discord.ui.Modal, title="Gửi thông tin tài khoản c
             f"• **Tên sản phẩm:** {self.product_name}\n"
             f"• **Số lượng:** {self.quantity}\n"
             f"• **Giá:** {self.total_price:,} VNĐ\n"
-            f"• **Thời gian bảo hành:** {warranty_display}\n"
+            f"• **Thời gian bảo hành:** {self.warranty_text}\n"
             f"• **Thời gian giao:** {current_time_str}\n"
             f"• **Tài khoản của bạn:** `{self.username_input.value}`\n"
             f"• **Mật khẩu của bạn:** `{self.password_input.value}`\n"
@@ -308,13 +303,19 @@ class AccountInputModal(discord.ui.Modal, title="Gửi thông tin tài khoản c
         history_channel = guild.get_channel(HISTORY_CHANNEL_ID)
         if history_channel:
             user_id_str = str(self.customer.id)
-            if len(user_id_str) > 2:
-                masked_user_id = user_id_str[0] + "*" * (len(user_id_str) - 2) + user_id_str[-1]
+            if len(user_id_str) > 4:
+                masked_user_id = user_id_str[:2] + "*********" + user_id_str[-2:]
             else:
-                masked_user_id = "***"
+                masked_user_id = user_id_str[0] + "*********" + user_id_str[-1]
             
-            history_msg = f"Khách hàng {masked_user_id} vừa thanh toán mua thành công tài khoản / random **{self.product_name}** với giá **{self.total_price:,} VNĐ** vào lúc `{current_time_str}`".replace(",", ".")
-            await history_channel.send(history_msg)
+            history_msg = f"Khách hàng {masked_user_id} vừa thanh toán và mua thành công:\nLoại: Random / Mua Acc\nGiá: {self.total_price:,} VNĐ\nBảo hành: {self.warranty_text}\nVào lúc: {current_time_str}".replace(",", ".")
+            
+            history_embed = discord.Embed(
+                description=history_msg,
+                color=discord.Color.blue()
+            )
+            history_embed.set_image(url="https://i.ibb.co/Y4TM5QRM/C40-F0704-7988-4206-98-BF-5326-B8-DCF0-EF.gif")
+            await history_channel.send(embed=history_embed)
 
         await interaction.response.send_message("✅ Đã gửi thông tin tài khoản vào ticket và hộp thư riêng (DM) của khách hàng thành công!", ephemeral=True)
 
@@ -550,7 +551,7 @@ class PriceSelect(discord.ui.Select):
         data_source = BUY_CATEGORIES_DATA if self.ticket_type == "mua-acc" else RANDOM_CATEGORIES_DATA
         for label, price, desc in data_source[self.category_key]["prices"]:
             if price == unit_price:
-                selected_label = f"{label} ({desc})"
+                selected_label = f"{label}"
                 break
         
         modal = QuantityModal(self.ticket_type, self.category_key, selected_label, unit_price)
