@@ -196,13 +196,14 @@ async def on_member_remove(member):
 # ==========================================
 
 class WarrantySelect(discord.ui.Select):
-    def __init__(self, ticket_channel_id: int, customer: discord.User, product_name: str, quantity: int, total_price: int, order_code: str):
+    def __init__(self, ticket_channel_id: int, customer: discord.User, product_name: str, quantity: int, total_price: int, order_code: str, ticket_type: str):
         self.ticket_channel_id = ticket_channel_id
         self.customer = customer
         self.product_name = product_name
         self.quantity = quantity
         self.total_price = total_price
         self.order_code = order_code
+        self.ticket_type = ticket_type
 
         options = [
             discord.SelectOption(label="Không bảo hành", value="0", description="Sản phẩm không áp dụng bảo hành", emoji="❌")
@@ -226,14 +227,15 @@ class WarrantySelect(discord.ui.Select):
             self.quantity, 
             self.total_price,
             warranty_text,
-            self.order_code
+            self.order_code,
+            self.ticket_type
         )
         await interaction.response.send_modal(modal)
 
 class WarrantySelectView(discord.ui.View):
-    def __init__(self, ticket_channel_id: int, customer: discord.User, product_name: str, quantity: int, total_price: int, order_code: str):
+    def __init__(self, ticket_channel_id: int, customer: discord.User, product_name: str, quantity: int, total_price: int, order_code: str, ticket_type: str):
         super().__init__(timeout=60)
-        self.add_item(WarrantySelect(ticket_channel_id, customer, product_name, quantity, total_price, order_code))
+        self.add_item(WarrantySelect(ticket_channel_id, customer, product_name, quantity, total_price, order_code, ticket_type))
 
 class AccountInputModal(discord.ui.Modal, title="Gửi thông tin tài khoản cho khách"):
     username_input = discord.ui.TextInput(label="Tài khoản của bạn", placeholder="Nhập tài khoản...", required=True)
@@ -242,7 +244,7 @@ class AccountInputModal(discord.ui.Modal, title="Gửi thông tin tài khoản c
     token_input = discord.ui.TextInput(label="Token (nếu có)", placeholder="Nhập token...", required=False)
     cookie_input = discord.ui.TextInput(label="Cookie (nếu có)", placeholder="Nhập cookie...", required=False, style=discord.TextStyle.paragraph)
 
-    def __init__(self, ticket_channel_id: int, customer: discord.User, product_name: str, quantity: int, total_price: int, warranty_text: str, order_code: str):
+    def __init__(self, ticket_channel_id: int, customer: discord.User, product_name: str, quantity: int, total_price: int, warranty_text: str, order_code: str, ticket_type: str):
         super().__init__()
         self.ticket_channel_id = ticket_channel_id
         self.customer = customer
@@ -251,6 +253,7 @@ class AccountInputModal(discord.ui.Modal, title="Gửi thông tin tài khoản c
         self.total_price = total_price
         self.warranty_text = warranty_text
         self.order_code = order_code
+        self.ticket_type = ticket_type
 
     async def on_submit(self, interaction: discord.Interaction):
         guild = interaction.guild
@@ -304,11 +307,14 @@ class AccountInputModal(discord.ui.Modal, title="Gửi thông tin tài khoản c
         if history_channel:
             user_id_str = str(self.customer.id)
             if len(user_id_str) > 4:
-                masked_user_id = user_id_str[:2] + "*********" + user_id_str[-2:]
+                masked_user_id = user_id_str[:5] + "*********" + user_id_str[-2:]
             else:
                 masked_user_id = user_id_str[0] + "*********" + user_id_str[-1]
             
-            history_msg = f"Khách hàng {masked_user_id} vừa thanh toán và mua thành công:\nLoại: Random / Mua Acc\nGiá: {self.total_price:,} VNĐ\nBảo hành: {self.warranty_text}\nVào lúc: {current_time_str}".replace(",", ".")
+            # Phân định rõ ràng loại giao dịch
+            display_type = "Mua Account" if self.ticket_type == "mua-acc" else "Random Account"
+            
+            history_msg = f"**Khách hàng {masked_user_id} vừa thanh toán và giao dịch thành công☑️**\nLoại: {display_type}\nGiá: {self.total_price:,} VNĐ\nBảo hành: {self.warranty_text}\nVào lúc: {current_time_str}".replace(",", ".")
             
             history_embed = discord.Embed(
                 description=history_msg,
@@ -356,7 +362,7 @@ class ConfirmRefundView(discord.ui.View):
 
 
 class AdminActionView(discord.ui.View):
-    def __init__(self, ticket_channel_id: int, customer: discord.User, order_code: str, product_name: str, quantity: int, total_price: int):
+    def __init__(self, ticket_channel_id: int, customer: discord.User, order_code: str, product_name: str, quantity: int, total_price: int, ticket_type: str):
         super().__init__(timeout=None)
         self.ticket_channel_id = ticket_channel_id
         self.customer = customer
@@ -364,10 +370,11 @@ class AdminActionView(discord.ui.View):
         self.product_name = product_name
         self.quantity = quantity
         self.total_price = total_price
+        self.ticket_type = ticket_type
 
     @discord.ui.button(label="✅ Xác nhận đã nhận tiền", style=discord.ButtonStyle.green, custom_id="btn_admin_confirm_money")
     async def confirm_money(self, interaction: discord.Interaction, button: discord.ui.Button):
-        next_view = AdminPostConfirmView(self.ticket_channel_id, self.customer, self.order_code, self.product_name, self.quantity, self.total_price)
+        next_view = AdminPostConfirmView(self.ticket_channel_id, self.customer, self.order_code, self.product_name, self.quantity, self.total_price, self.ticket_type)
         await interaction.message.edit(view=next_view)
         await interaction.response.send_message(f"✅ Đã xác nhận nhận tiền đơn hàng `{self.order_code}`! Bây giờ bạn có thể chọn Gửi tài khoản hoặc Hoàn tiền.", ephemeral=True)
 
@@ -420,7 +427,7 @@ class AdminActionView(discord.ui.View):
 
 
 class AdminPostConfirmView(discord.ui.View):
-    def __init__(self, ticket_channel_id: int, customer: discord.User, order_code: str, product_name: str, quantity: int, total_price: int):
+    def __init__(self, ticket_channel_id: int, customer: discord.User, order_code: str, product_name: str, quantity: int, total_price: int, ticket_type: str):
         super().__init__(timeout=None)
         self.ticket_channel_id = ticket_channel_id
         self.customer = customer
@@ -428,10 +435,11 @@ class AdminPostConfirmView(discord.ui.View):
         self.product_name = product_name
         self.quantity = quantity
         self.total_price = total_price
+        self.ticket_type = ticket_type
 
     @discord.ui.button(label="📦 Gửi tài khoản", style=discord.ButtonStyle.green, custom_id="btn_admin_send_acc")
     async def send_account(self, interaction: discord.Interaction, button: discord.ui.Button):
-        view = WarrantySelectView(self.ticket_channel_id, self.customer, self.product_name, self.quantity, self.total_price, self.order_code)
+        view = WarrantySelectView(self.ticket_channel_id, self.customer, self.product_name, self.quantity, self.total_price, self.order_code, self.ticket_type)
         await interaction.response.send_message("🛡️ Vui lòng chọn thời gian bảo hành cho sản phẩm ở menu bên dưới trước khi nhập thông tin:", view=view, ephemeral=True)
 
     @discord.ui.button(label="💸 Hoàn tiền", style=discord.ButtonStyle.danger, custom_id="btn_admin_refund_step2")
@@ -526,7 +534,7 @@ class QuantityModal(discord.ui.Modal, title="Nhập số lượng muốn mua"):
                 color=discord.Color.blue()
             )
             admin_embed.set_thumbnail(url=interaction.user.display_avatar.url)
-            admin_view = AdminActionView(interaction.channel.id, interaction.user, order_code, self.product_name, qty, total_price)
+            admin_view = AdminActionView(interaction.channel.id, interaction.user, order_code, self.product_name, qty, total_price, self.ticket_type)
             await manager_channel.send(embed=admin_embed, view=admin_view)
 
 class PriceSelect(discord.ui.Select):
