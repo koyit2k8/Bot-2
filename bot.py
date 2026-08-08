@@ -33,6 +33,7 @@ WELCOME_CHANNEL_ID = 1379468628549963899
 GOODBYE_CHANNEL_ID = 1449415666233774102  
 TICKET_CATEGORY_ID = 1483484606735974491  
 MANAGER_CHANNEL_ID = 1535624430699417681
+HISTORY_CHANNEL_ID = 000000000000000000  # ⚠️ THAY ID KÊNH LỊCH-SỬ CỦA BẠN VÀO ĐÂY
 
 # --- CẤU HÌNH THÔNG TIN THANH TOÁN ---
 BANK_ID = "MB"          
@@ -302,6 +303,18 @@ class AccountInputModal(discord.ui.Modal, title="Gửi thông tin tài khoản c
             await self.customer.send(embed=dm_embed)
         except Exception:
             pass  
+
+        # --- GỬI LỊCH SỬ MUA HÀNG VÀO KÊNH LỊCH SỬ ---
+        history_channel = guild.get_channel(HISTORY_CHANNEL_ID)
+        if history_channel:
+            user_id_str = str(self.customer.id)
+            if len(user_id_str) > 2:
+                masked_user_id = user_id_str[0] + "*" * (len(user_id_str) - 2) + user_id_str[-1]
+            else:
+                masked_user_id = "***"
+            
+            history_msg = f"Khách hàng {masked_user_id} vừa thanh toán mua thành công tài khoản / random **{self.product_name}** với giá **{self.total_price:,} VNĐ** vào lúc `{current_time_str}`".replace(",", ".")
+            await history_channel.send(history_msg)
 
         await interaction.response.send_message("✅ Đã gửi thông tin tài khoản vào ticket và hộp thư riêng (DM) của khách hàng thành công!", ephemeral=True)
 
