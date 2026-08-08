@@ -308,9 +308,9 @@ class AccountInputModal(discord.ui.Modal, title="Gửi thông tin tài khoản c
             user_id_str = str(self.customer.id)
             # Cấu hình ẩn ID: Giữ lại 2 ký tự đầu, 2 ký tự cuối, ở giữa thay bằng *** giống ví dụ 1********8[cite: 12, 13]
             if len(user_id_str) > 4:
-                masked_user_id = user_id_str[:1] + "******" + user_id_str[-1:]
+                masked_user_id = user_id_str[:2] + "***" + user_id_str[-2:]
             else:
-                masked_user_id = user_id_str[0] + "******" + user_id_str[-1]
+                masked_user_id = user_id_str[0] + "***" + user_id_str[-1]
             
             # Phân định rõ ràng loại giao dịch
             display_type = "Mua Account" if self.ticket_type == "mua-acc" else "Random Account"
