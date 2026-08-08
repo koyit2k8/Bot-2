@@ -256,11 +256,12 @@ class AccountInputModal(discord.ui.Modal, title="Gửi thông tin tài khoản c
         self.ticket_type = ticket_type
 
     async def on_submit(self, interaction: discord.Interaction):
+        await interaction.response.defer(ephemeral=True)
         guild = interaction.guild
         ticket_channel = guild.get_channel(self.ticket_channel_id)
 
         if not ticket_channel:
-            await interaction.response.send_message("❌ Không tìm thấy kênh ticket của khách hàng này!", ephemeral=True)
+            await interaction.followup.send("❌ Không tìm thấy kênh ticket của khách hàng này!", ephemeral=True)
             return
 
         current_time_str = datetime.now(VN_TZ).strftime("%d/%m/%Y lúc %H:%M:%S")
@@ -306,26 +307,25 @@ class AccountInputModal(discord.ui.Modal, title="Gửi thông tin tài khoản c
         history_channel = guild.get_channel(HISTORY_CHANNEL_ID)
         if history_channel:
             user_id_str = str(self.customer.id)
-            # Cấu hình ẩn ID: Giữ lại 2 ký tự đầu, 2 ký tự cuối, ở giữa thay bằng *** giống ví dụ 1********8[cite: 12, 13]
             if len(user_id_str) > 4:
                 masked_user_id = user_id_str[:2] + "***" + user_id_str[-2:]
             else:
                 masked_user_id = user_id_str[0] + "***" + user_id_str[-1]
             
-            # Phân định rõ ràng loại giao dịch
-            display_type = "Mua Account" if self.ticket_type == "mua-acc" else "Random Account"
+            # Kiểm tra an toàn cho ticket_type
+            t_type = str(self.ticket_type) if self.ticket_type else "mua-acc"
+            display_type = "Mua Account" if "mua" in t_type else "Random Account"
             
-            # Đã thêm Số lượng vào đây 👇
-            history_msg = f"👤 Khách hàng {masked_user_id} vừa thanh toán và giao dịch thành công ☑️\nLoại: {display_type}\nSố lượng: {self.quantity}\nGiá: {self.total_price:,} VNĐ\nBảo hành: {self.warranty_text}\nVào lúc: {current_time_str}".replace(",", ".")[cite: 13]
+            history_msg = f"👤 Khách hàng {masked_user_id} vừa thanh toán và giao dịch thành công ☑️\nLoại: {display_type}\nSố lượng: {self.quantity}\nGiá: {self.total_price:,} VNĐ\nBảo hành: {self.warranty_text}\nVào lúc: {current_time_str}".replace(",", ".")
             
             history_embed = discord.Embed(
                 description=history_msg,
                 color=discord.Color.blue()
             )
-            history_embed.set_image(url="https://i.ibb.co/Y4TM5QRM/C40-F0704-7988-4206-98-BF-5326-B8-DCF0-EF.gif")[cite: 13]
-            await history_channel.send(embed=history_embed)[cite: 13]
+            history_embed.set_image(url="https://i.ibb.co/Y4TM5QRM/C40-F0704-7988-4206-98-BF-5326-B8-DCF0-EF.gif")
+            await history_channel.send(embed=history_embed)
 
-        await interaction.response.send_message("✅ Đã gửi thông tin tài khoản vào ticket và hộp thư riêng (DM) của khách hàng thành công!", ephemeral=True)
+        await interaction.followup.send("✅ Đã gửi thông tin tài khoản vào ticket và hộp thư riêng (DM) của khách hàng thành công!", ephemeral=True)
 
 class ConfirmRefundView(discord.ui.View):
     def __init__(self, ticket_channel_id: int, customer: discord.User, order_code: str):
