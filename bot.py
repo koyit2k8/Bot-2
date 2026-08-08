@@ -695,7 +695,7 @@ async def ticket_done(ctx):
             pass
         return
 
-    @ctx.send("🔒 Giao dịch hoàn tất! Kênh này sẽ tự động đóng sau 3 giây...")
+    await ctx.send("🔒 Giao dịch hoàn tất! Kênh này sẽ tự động đóng sau 3 giây...")
     try:
         await ctx.message.delete()
     except:
