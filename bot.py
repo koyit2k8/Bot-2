@@ -308,9 +308,9 @@ class AccountInputModal(discord.ui.Modal, title="Gửi thông tin tài khoản c
         if history_channel:
             user_id_str = str(self.customer.id)
             if len(user_id_str) > 4:
-                masked_user_id = user_id_str[:2] + "***" + user_id_str[-2:]
+                masked_user_id = user_id_str[:1] + "******" + user_id_str[-1:]
             else:
-                masked_user_id = user_id_str[0] + "***" + user_id_str[-1]
+                masked_user_id = user_id_str[0] + "******" + user_id_str[-1]
             
             # Kiểm tra an toàn cho ticket_type
             t_type = str(self.ticket_type) if self.ticket_type else "mua-acc"
