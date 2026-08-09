@@ -1,5 +1,5 @@
 import discord
-from discord.ext import commands
+from discord.ext import commands, tasks
 import asyncio
 import urllib.parse
 import random
@@ -34,6 +34,10 @@ GOODBYE_CHANNEL_ID = 1449415666233774102
 TICKET_CATEGORY_ID = 1483484606735974491  
 MANAGER_CHANNEL_ID = 1535624430699417681
 HISTORY_CHANNEL_ID = 1535700411384856688
+
+# --- CẤU HÌNH TÍNH NĂNG PICK ROLE ---
+MEMBER_ROLE_NAME = "Member"              # Tên role Member cần kiểm tra
+PICK_ROLE_CHANNEL_ID = 1449337984779550720 # ID kênh pick role để bot tag vào DM
 
 # --- CẤU HÌNH THÔNG TIN THANH TOÁN ---
 BANK_ID = "MB"          
@@ -126,9 +130,43 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 welcome_channels = {}
 goodbye_channels = {}
 
+# --- HÀM HỖ TRỢ GỬI DM KIỂM TRA ROLE ---
+async def check_and_send_pick_role_dm(member):
+    if member.bot:
+        return
+    
+    # Tìm xem member đã có role Member chưa
+    member_role = discord.utils.get(member.roles, name=MEMBER_ROLE_NAME)
+    if not member_role:
+        try:
+            channel_mention = f"<#{PICK_ROLE_CHANNEL_ID}>"
+            dm_content = f"Bạn chưa Pick Role tại {channel_mention} để hiển thị và sử dụng toàn vẹn chức năng của máy chủ, hãy pick role Member nhé!"
+            await member.send(dm_content)
+        except Exception:
+            # Trường hợp thành viên chặn tin nhắn riêng (DM) từ bot
+            pass
+
 @bot.event
 async def on_ready():
     print(f"Bot đã đăng nhập thành công với tên: {bot.user}")
+    if not background_check_roles.is_running():
+        background_check_roles.start()
+
+# --- TASK TỰ ĐỘNG KIỂM TRA TOÀN BỘ THÀNH VIÊN (CHẠY ĐỊNH KỲ 6 TIẾNG/LẦN) ---
+@tasks.loop(hours=6)
+async def background_check_roles():
+    for guild in bot.guilds:
+        # Đảm bảo bot đã cache đủ danh sách thành viên
+        try:
+            async for member in guild.fetch_members(limit=None):
+                await check_and_send_pick_role_dm(member)
+                await asyncio.sleep(1.5) # Khoảng nghỉ chống rate-limit của Discord
+        except Exception as e:
+            print(f"Lỗi khi quét thành viên ở server {guild.name}: {e}")
+
+@background_check_roles.before_loop
+async def before_background_check_roles():
+    await bot.wait_until_ready()
 
 # ==========================================
 # LỆNH SETUP WELCOME & GOODBYE
@@ -146,13 +184,35 @@ async def set_goodbye(ctx):
     goodbye_channels[ctx.guild.id] = ctx.channel.id
     await ctx.send(f"✅ Đã thiết lập kênh {ctx.channel.mention} làm **kênh tạm biệt** thành viên thành công!")
 
+# --- LỆNH THỦ CÔNG CHO ADMIN KIỂM TRA LẠI TOÀN BỘ SERVER ---
+@bot.command(name="checkrole")
+@commands.has_permissions(administrator=True)
+async def manual_check_role(ctx):
+    await ctx.send("🔄 Đang tiến hành quét toàn bộ thành viên chưa pick role và gửi tin nhắn riêng...")
+    count = 0
+    async for member in ctx.guild.fetch_members(limit=None):
+        if not member.bot:
+            member_role = discord.utils.get(member.roles, name=MEMBER_ROLE_NAME)
+            if not member_role:
+                try:
+                    channel_mention = f"<#{PICK_ROLE_CHANNEL_ID}>"
+                    await member.send(f"Bạn chưa Pick Role tại {channel_mention} để hiển thị và sử dụng toàn vẹn chức năng của máy chủ, hãy pick role Member nhé!")
+                    count += 1
+                    await asyncio.sleep(1.5)
+                except Exception:
+                    pass
+    await ctx.send(f"✅ Đã hoàn tất quét! Đã gửi thông báo nhắc nhở tới {count} thành viên chưa pick role.")
+
 
 # ==========================================
-# TÍNH NĂNG 1: CHÀO MỪNG & TẠM BIỆT
+# TÍNH NĂNG 1: CHÀO MỪNG & TẠM BIỆT & AUTO CHECK ROLE
 # ==========================================
 
 @bot.event
 async def on_member_join(member):
+    # Tự động gửi DM nhắc nhở pick role khi thành viên mới vào
+    await check_and_send_pick_role_dm(member)
+
     channel_id = welcome_channels.get(member.guild.id, WELCOME_CHANNEL_ID)
     channel = member.guild.get_channel(channel_id)
     
@@ -312,7 +372,6 @@ class AccountInputModal(discord.ui.Modal, title="Gửi thông tin tài khoản c
             else:
                 masked_user_id = user_id_str[0] + "******" + user_id_str[-1]
             
-            # Kiểm tra an toàn cho ticket_type
             t_type = str(self.ticket_type) if self.ticket_type else "mua-acc"
             display_type = "Mua Account" if "mua" in t_type else "Random Account"
             
@@ -690,7 +749,7 @@ class TicketPanelView(discord.ui.View):
         view = ConfirmTicketView("random-acc")
         await interaction.response.send_message("🔔 Bạn có chắc chắn muốn mở ticket **Random Account** không? Hãy bấm xác nhận bên dưới.", view=view, ephemeral=True)
 
-@bot.command(name="random")
+@bot.command(name="rd")
 @commands.has_permissions(administrator=True)
 async def setup_ticket(ctx):
     embed = discord.Embed(
