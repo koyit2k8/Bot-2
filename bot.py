@@ -131,16 +131,17 @@ welcome_channels = {}
 goodbye_channels = {}
 
 # --- HÀM HỖ TRỢ GỬI DM KIỂM TRA ROLE ---
+# --- HÀM HỖ TRỢ GỬI DM KIỂM TRA ROLE ---
 async def check_and_send_pick_role_dm(member):
     if member.bot:
         return
     
-    # Tìm xem member đã có role Member chưa
+    # Kiểm tra xem thành viên đã có role Member hay chưa
     member_role = discord.utils.get(member.roles, name=MEMBER_ROLE_NAME)
     if not member_role:
         try:
             channel_mention = f"<#{PICK_ROLE_CHANNEL_ID}>"
-            dm_content = f"Bạn chưa Pick Role tại {channel_mention} để hiển thị và sử dụng toàn vẹn chức năng của máy chủ, hãy pick role Member nhé!"
+            dm_content = f"Bạn chưa Pick Role tại {channel_mention}, hãy Pick Role ngay để sử dụng toàn bộ tính năng của Máy chủ nhé!"
             await member.send(dm_content)
         except Exception:
             # Trường hợp thành viên chặn tin nhắn riêng (DM) từ bot
