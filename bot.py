@@ -120,7 +120,7 @@ RANDOM_CATEGORIES_DATA = {
             ("Random Clone FB Cổ 2006", 500000, "Giá: 500.000 VNĐ")
         ]
     },
-    "random-facebook-co-2": {
+    "random-facebook-via": {
         "name": "Random Via Facebook Cổ (2009-2016)",
         "emoji": "🎲",
         "style": discord.ButtonStyle.primary,
@@ -128,7 +128,7 @@ RANDOM_CATEGORIES_DATA = {
             ("Random Via FB Cổ 2010", 49000, "Giá: 49.000 VNĐ"),
             ("Random Via FB Cổ 2009-2014", 65000, "Giá: 65.000 VNĐ"),
             ("Random Via FB Cổ 2012-2016", 50000, "Giá: 50.000 VNĐ")
-            ]
+        ]
     },
     "random-tiktok-us": {
         "name": "Random Tài Khoản TikTok US",
@@ -150,12 +150,10 @@ welcome_channels = {}
 goodbye_channels = {}
 
 # --- HÀM HỖ TRỢ GỬI DM KIỂM TRA ROLE ---
-# --- HÀM HỖ TRỢ GỬI DM KIỂM TRA ROLE ---
 async def check_and_send_pick_role_dm(member):
     if member.bot:
         return
     
-    # Kiểm tra xem thành viên đã có role Member hay chưa
     member_role = discord.utils.get(member.roles, name=MEMBER_ROLE_NAME)
     if not member_role:
         try:
@@ -163,7 +161,6 @@ async def check_and_send_pick_role_dm(member):
             dm_content = f"Bạn chưa Pick Role tại {channel_mention}, hãy Pick Role ngay để sử dụng toàn bộ tính năng của Máy chủ nhé!"
             await member.send(dm_content)
         except Exception:
-            # Trường hợp thành viên chặn tin nhắn riêng (DM) từ bot
             pass
 
 @bot.event
@@ -172,15 +169,14 @@ async def on_ready():
     if not background_check_roles.is_running():
         background_check_roles.start()
 
-# --- TASK TỰ ĐỘNG KIỂM TRA TOÀN BỘ THÀNH VIÊN (CHẠY ĐỊNH KỲ 3 NGÀY/LẦN) ---
-@tasks.loop(days=3)
+# --- TASK TỰ ĐỘNG KIỂM TRA TOÀN BỘ THÀNH VIÊN (CHẠY ĐỊNH KỲ 72 GIỜ / 3 NGÀY) ---
+@tasks.loop(hours=72)
 async def background_check_roles():
     for guild in bot.guilds:
-        # Đảm bảo bot đã cache đủ danh sách thành viên
         try:
             async for member in guild.fetch_members(limit=None):
                 await check_and_send_pick_role_dm(member)
-                await asyncio.sleep(1.5) # Khoảng nghỉ chống rate-limit của Discord
+                await asyncio.sleep(1.5)
         except Exception as e:
             print(f"Lỗi khi quét thành viên ở server {guild.name}: {e}")
 
@@ -204,7 +200,6 @@ async def set_goodbye(ctx):
     goodbye_channels[ctx.guild.id] = ctx.channel.id
     await ctx.send(f"✅ Đã thiết lập kênh {ctx.channel.mention} làm **kênh tạm biệt** thành viên thành công!")
 
-# --- LỆNH THỦ CÔNG CHO ADMIN KIỂM TRA LẠI TOÀN BỘ SERVER ---
 @bot.command(name="checkrole")
 @commands.has_permissions(administrator=True)
 async def manual_check_role(ctx):
@@ -230,7 +225,6 @@ async def manual_check_role(ctx):
 
 @bot.event
 async def on_member_join(member):
-    # Tự động gửi DM nhắc nhở pick role khi thành viên mới vào
     await check_and_send_pick_role_dm(member)
 
     channel_id = welcome_channels.get(member.guild.id, WELCOME_CHANNEL_ID)
@@ -383,7 +377,6 @@ class AccountInputModal(discord.ui.Modal, title="Gửi thông tin tài khoản c
         except Exception:
             pass  
 
-        # --- GỬI LỊCH SỬ MUA HÀNG VÀO KÊNH LỊCH SỬ ---
         history_channel = guild.get_channel(HISTORY_CHANNEL_ID)
         if history_channel:
             user_id_str = str(self.customer.id)
