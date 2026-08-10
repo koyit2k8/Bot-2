@@ -36,7 +36,7 @@ MANAGER_CHANNEL_ID = 1535624430699417681
 HISTORY_CHANNEL_ID = 1535700411384856688
 
 # --- CẤU HÌNH TÍNH NĂNG PICK ROLE ---
-MEMBER_ROLE_NAME = "Member"              # Tên role Member cần kiểm tra
+MEMBER_ROLE_NAME = "MEMBER"              # Tên role Member cần kiểm tra
 PICK_ROLE_CHANNEL_ID = 1449337984779550720 # ID kênh pick role để bot tag vào DM
 
 # --- CẤU HÌNH THÔNG TIN THANH TOÁN ---
@@ -59,12 +59,17 @@ BUY_CATEGORIES_DATA = {
             ("Tài Khoản CapCut Ultra (12 Tháng)", 13989000, "Giá: 13.989.000 VNĐ")
         ]
     },
-    "acc-canva-pro": {
-        "name": "Mua Tài Khoản Canva Pro",
+    "acc-discord": {
+        "name": "Mua Tài Khoản Discord",
         "emoji": "🛒",
         "style": discord.ButtonStyle.primary,
         "prices": [
-            ("Tài Khoản Canva Pro (1 Năm)", 150000, "Giá: 150.000 VNĐ")
+            ("Tài Khoản Discord Cổ (2016)", 199000, "Giá: 199.000 VNĐ"),
+            ("Tài Khoản Discord Cổ (2018)", 146000, "Giá: 146.000 VNĐ"),
+            ("Tài Khoản Discord Cổ (2019)", 129000, "Giá: 129.000 VNĐ"),
+            ("Tài Khoản Discord Cổ (2020-2022)", 86000, "Giá: 86.000 VNĐ"),
+            ("Tài Khoản Discord Cổ (2022-2024)", 78000, "Giá: 78.000 VNĐ"),
+            ("Tài Khoản Discord Cổ (2017)", 165000, "Giá: 165.000 VNĐ")
         ]
     },
     "acc-youtube-premium": {
@@ -72,7 +77,7 @@ BUY_CATEGORIES_DATA = {
         "emoji": "🛒",
         "style": discord.ButtonStyle.primary,
         "prices": [
-            ("Youtube Premium (1 Tháng)", 30000, "Giá: 30.000 VNĐ")
+            ("chưa có sản phẩm", 30000, "Giá: 30.000 VNĐ")
         ]
     },
     "acc-tiktok-clone": {
@@ -80,7 +85,7 @@ BUY_CATEGORIES_DATA = {
             "emoji": "🛒",
             "style": discord.ButtonStyle.primary,
             "prices": [
-                ("TikTok Clone (1 Con)", 5000, "Giá: 5.000 VNĐ")
+                ("Chưa có sản phẩm", 5000, "Giá: 5.000 VNĐ")
             ]
     },
     "acc-gmail-clone": {
@@ -88,7 +93,7 @@ BUY_CATEGORIES_DATA = {
             "emoji": "🛒",
             "style": discord.ButtonStyle.primary,
             "prices": [
-                ("Gmail Reg Trên 1 Tháng (1 Con)", 4000, "Giá: 4.000 VNĐ")
+                ("chưa có sản phẩm", 4000, "Giá: 4.000 VNĐ")
             ]
     }
 }
@@ -96,27 +101,41 @@ BUY_CATEGORIES_DATA = {
 # --- CẤU HÌNH DANH MỤC RANDOM ACCOUNT ---
 RANDOM_CATEGORIES_DATA = {
     "random-facebook-co-1": {
-        "name": "Random Tài Khoản Facebook Cổ (2012-2022)",
+        "name": "Random Clone Facebook Cổ (2009-2015)",
         "emoji": "🎲",
         "style": discord.ButtonStyle.primary,
         "prices": [
-            ("Random FB Cổ 2012-2022", 20000, "Giá: 20.000 VNĐ")
+            ("Random FB Cổ 2009-2015", 20000, "Giá: 20.000 VNĐ"),
+            ("Random FB Cổ 2009", 30000, "Giá: 30.000 VNĐ"),
+            ("Random FB Cổ 2011", 18000, "Giá: 18.000 VNĐ")
         ]
     },
     "random-facebook-co-2": {
-        "name": "Random Tài Khoản Facebook Cổ (2008-2016)",
+        "name": "Random Clone Facebook Cổ (2006-2011)",
         "emoji": "🎲",
         "style": discord.ButtonStyle.primary,
         "prices": [
-            ("Random FB Cổ 2008-2016", 50000, "Giá: 50.000 VNĐ")
+            ("Random Clone FB Cổ 2006-2011", 50000, "Giá: 50.000 VNĐ"),
+            ("Random Clone FB Cổ 2006-2010", 75000, "Giá: 75.000 VNĐ"),
+            ("Random Clone FB Cổ 2006", 500000, "Giá: 500.000 VNĐ")
         ]
+    },
+    "random-facebook-co-2": {
+        "name": "Random Via Facebook Cổ (2009-2016)",
+        "emoji": "🎲",
+        "style": discord.ButtonStyle.primary,
+        "prices": [
+            ("Random Via FB Cổ 2010", 49000, "Giá: 49.000 VNĐ"),
+            ("Random Via FB Cổ 2009-2014", 65000, "Giá: 65.000 VNĐ"),
+            ("Random Via FB Cổ 2012-2016", 50000, "Giá: 50.000 VNĐ")
+            ]
     },
     "random-tiktok-us": {
         "name": "Random Tài Khoản TikTok US",
         "emoji": "🎲",
         "style": discord.ButtonStyle.primary,
         "prices": [
-            ("Random TikTok US", 15000, "Giá: 15.000 VNĐ")
+            ("Chưa có sản phẩm", 15000, "Giá: 15.000 VNĐ")
         ]
     }
 }
@@ -153,8 +172,8 @@ async def on_ready():
     if not background_check_roles.is_running():
         background_check_roles.start()
 
-# --- TASK TỰ ĐỘNG KIỂM TRA TOÀN BỘ THÀNH VIÊN (CHẠY ĐỊNH KỲ 6 TIẾNG/LẦN) ---
-@tasks.loop(hours=6)
+# --- TASK TỰ ĐỘNG KIỂM TRA TOÀN BỘ THÀNH VIÊN (CHẠY ĐỊNH KỲ 3 NGÀY/LẦN) ---
+@tasks.loop(days=3)
 async def background_check_roles():
     for guild in bot.guilds:
         # Đảm bảo bot đã cache đủ danh sách thành viên
